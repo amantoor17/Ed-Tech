@@ -69,6 +69,10 @@ exports.sendOTP = async (req, res) => {
 
 //SignUp
 
+exports.signUp = async (req, res) => {
+    
+}
+
 //Login
 
 //ChangePassword
