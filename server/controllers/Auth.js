@@ -298,7 +298,7 @@ exports.changePassword = async (req, res) => {
         console.error("Error changing password: ", error);
         return res.status(500).json({
             success: false,
-            message: "Something went wrong. Please try again."
+            message: "Something went wrong while changing password. Please try again."
         });
     }
     
