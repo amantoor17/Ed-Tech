@@ -4,6 +4,7 @@ const otpGenerator = require("otp-generator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const sendMail = require("../utils/sendMail"); 
 
 
 //Send Otp
@@ -235,10 +236,70 @@ exports.login = async (req, res) => {
 //ChangePassword
 
 exports.changePassword = async (req, res) => {
-    //get data from request's body
-    //get oldPassword, newPassword, confirmNewPassword
-    //validation
-    //update password in DB
-    //send mail - password updated
-    //return response
+    try{
+        //Get data from request's body
+        const {oldPassword, newPassword,  confirmNewPassword} = req.body;
+
+        //Validate Input
+        if(!oldPassword || !newPassword || !confirmNewPassword){
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required.",
+            });
+        }
+
+        if(newPassword !== confirmNewPassword){
+            return res.status(400).json({
+                success: false,
+                message: "New passwords do not match.",
+            });
+        }
+
+        //Get user from database
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        if(!user){
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+
+        //Compare old password
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if(!isMatch){
+            return res.status(401).json({
+                success: false,
+                message: "Old password is incorrect.",
+            });
+        }
+
+        //Hash new password and update in DB
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        //Send confirmation email
+        await sendMail ({
+            to: user.email,
+            subject: "Password Changed Successfully",
+            text: "Your password has beed updated successfully. If you didn't request this change, contact support immediately."
+        });
+
+        //return response
+        return res.status(200).json({
+            success: true,
+            message: "Password Updated Successfully.",
+        });
+
+
+    } catch(error) {
+        console.error("Error changing password: ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong. Please try again."
+        });
+    }
+    
 }
